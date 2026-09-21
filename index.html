@@ -1,0 +1,1361 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>世界观工作台</title>
+<style>
+/* ============================================================
+   世界观工作台 —— 样式表
+   配色：主色 #3d5a4a（墨绿） / 背景 #f5f2ec（米白）
+   ============================================================ */
+:root {
+  --green: #3d5a4a;
+  --green-dark: #2f4639;
+  --green-light: #e8efe9;
+  --green-soft: #f2f7f3;
+  --bg: #f5f2ec;
+  --card: #ffffff;
+  --border: #e3e0d7;
+  --text: #26282a;
+  --muted: #8a8a85;
+  --danger: #b33a3a;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { height: 100%; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+    "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 15px;
+  line-height: 1.65;
+}
+button { font-family: inherit; cursor: pointer; }
+input, textarea, select { font-family: inherit; font-size: 14px; color: var(--text); }
+.muted { color: var(--muted); }
+
+/* ---------- 顶部固定栏 ---------- */
+.topbar {
+  position: fixed; top: 0; left: 0; right: 0; height: 56px;
+  background: var(--card); border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 12px; padding: 0 16px; z-index: 100;
+}
+.hamburger {
+  display: none; background: none; border: none; font-size: 20px;
+  color: var(--green); padding: 4px 8px;
+}
+.brand { display: flex; align-items: center; gap: 8px; font-size: 17px; font-weight: 700; color: var(--green); white-space: nowrap; }
+.brand .logo {
+  width: 26px; height: 26px; border-radius: 6px; background: var(--green);
+  color: #fff; display: flex; align-items: center; justify-content: center; font-size: 14px;
+}
+.top-search { flex: 1; max-width: 360px; }
+.top-search input {
+  width: 100%; padding: 7px 12px; border: 1px solid var(--border);
+  border-radius: 6px; outline: none; background: var(--bg);
+}
+.top-search input:focus { border-color: var(--green); background: #fff; }
+.top-actions { display: flex; gap: 8px; margin-left: auto; flex-wrap: wrap; justify-content: flex-end; }
+
+/* ---------- 通用按钮 ---------- */
+.btn {
+  display: inline-flex; align-items: center; gap: 4px; padding: 6px 12px;
+  border-radius: 6px; border: 1px solid var(--border); background: #fff;
+  color: var(--text); font-size: 13px; transition: .15s; white-space: nowrap;
+}
+.btn:hover { border-color: var(--green); color: var(--green); }
+.btn-primary { background: var(--green); border-color: var(--green); color: #fff; }
+.btn-primary:hover { background: var(--green-dark); color: #fff; }
+.btn-danger { color: var(--danger); border-color: #e8cccc; }
+.btn-danger:hover { background: #fdf0f0; border-color: var(--danger); color: var(--danger); }
+
+/* ---------- 整体布局 ---------- */
+.layout { padding-top: 56px; min-height: 100vh; }
+.backdrop {
+  position: fixed; inset: 0; background: rgba(0,0,0,.35); z-index: 95; display: none;
+}
+body.sidebar-open .backdrop { display: block; }
+
+/* ---------- 左侧边栏 ---------- */
+.sidebar {
+  position: fixed; top: 56px; bottom: 0; left: 0; width: 280px;
+  background: var(--card); border-right: 1px solid var(--border);
+  display: flex; flex-direction: column; z-index: 96;
+}
+.sidebar-scroll { flex: 1; overflow-y: auto; padding: 6px 0 10px; }
+.group { margin-bottom: 2px; }
+.group-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 14px 5px; cursor: pointer; user-select: none;
+  color: var(--muted); font-size: 12.5px; font-weight: 600; letter-spacing: .8px;
+}
+.group-head:hover { color: var(--green); }
+.group-head .arrow { display: inline-block; transition: transform .15s; margin-right: 3px; }
+.group.collapsed .arrow { transform: rotate(-90deg); }
+.group.collapsed .group-body { display: none; }
+.group-count { font-weight: 400; color: #b5b5b0; }
+.item {
+  padding: 6px 14px 6px 16px; border-left: 3px solid transparent; cursor: pointer;
+}
+.item:hover { background: var(--green-soft); }
+.item.active { background: var(--green-light); border-left-color: var(--green); }
+.item .name {
+  font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.item .sub {
+  font-size: 11.5px; color: var(--muted);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.empty-hint { font-size: 12px; color: #b5b5b0; padding: 2px 16px 8px; }
+.log-badge {
+  display: inline-block; font-size: 11px; padding: 0 7px; border-radius: 999px;
+  margin-right: 4px; vertical-align: 1px;
+}
+.log-badge.add  { background: #e8efe9; color: #2f6b46; }
+.log-badge.edit { background: #e9eef7; color: #33557a; }
+.log-badge.del  { background: #fbe9e9; color: #8a3333; }
+.log-badge.sys  { background: #efe9f7; color: #5f3a8a; }
+
+/* 侧边栏底部：新建按钮 */
+.sidebar-bottom {
+  border-top: 1px solid var(--border); padding: 10px;
+  display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+}
+.sidebar-bottom .btn { justify-content: center; padding: 8px 4px; font-size: 12.5px; }
+
+/* ---------- 右侧主内容区 ---------- */
+.main { margin-left: 280px; padding: 26px 36px 70px; }
+.page { max-width: 880px; }
+.page-title {
+  font-size: 26px; padding-bottom: 10px; border-bottom: 1px solid var(--border);
+}
+.page-sub { color: var(--muted); font-size: 13.5px; margin-top: 8px; }
+.page-actions { display: flex; gap: 8px; margin: 14px 0; flex-wrap: wrap; }
+
+/* 仪表盘 */
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin: 18px 0; }
+.stat-card {
+  background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px;
+}
+.stat-num { font-size: 26px; font-weight: 700; color: var(--green); }
+.stat-label { color: var(--muted); font-size: 12.5px; }
+
+/* 通用段落小节（Wiki 风格） */
+.sec { margin-top: 22px; }
+.sec h2 {
+  font-size: 15.5px; color: var(--green); border-bottom: 1px solid #d8d5cc;
+  padding-bottom: 4px; margin-bottom: 10px;
+}
+.sec-body { font-size: 14.5px; white-space: pre-wrap; word-break: break-word; }
+.sec-body.comments { color: var(--muted); font-style: italic; }
+
+/* 人物信息框 */
+.infobox {
+  background: #f7f6f2; border: 1px solid var(--border); border-radius: 10px;
+  padding: 14px 20px; margin: 16px 0 10px;
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 28px;
+}
+.info-row { display: flex; gap: 8px; font-size: 13.5px; min-width: 0; }
+.info-label { color: var(--muted); flex-shrink: 0; min-width: 36px; }
+.info-value { word-break: break-word; }
+
+/* 标签区 */
+.tag-row { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+.tag {
+  font-size: 12px; padding: 2px 11px; border-radius: 999px; border: 1px solid transparent;
+}
+
+/* 好恶两栏 */
+.like-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.like-col { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; }
+.like-label { font-size: 12.5px; color: var(--muted); margin-bottom: 4px; }
+
+/* 相关条目链接 */
+.related-list { display: flex; flex-wrap: wrap; gap: 8px; }
+.related-link {
+  padding: 5px 12px; border: 1px solid var(--border); border-radius: 999px;
+  background: var(--card); font-size: 13px; color: var(--green);
+}
+.related-link:hover { border-color: var(--green); background: var(--green-soft); }
+.related-missing { font-size: 13px; color: #b5b5b0; padding: 5px 4px; }
+
+/* 地图 */
+.map-wrap {
+  position: relative; display: inline-block; max-width: 100%; margin: 16px 0 8px;
+  border-radius: 12px; overflow: hidden; background: #fff;
+  box-shadow: 0 6px 26px rgba(0,0,0,.18);
+}
+.map-img {
+  display: block; max-width: 100%; max-height: 72vh; width: auto; height: auto; cursor: crosshair;
+}
+.map-placeholder {
+  min-width: 280px; min-height: 180px; display: flex; align-items: center; justify-content: center;
+  color: var(--muted); font-size: 14px;
+}
+.map-marker {
+  position: absolute; width: 14px; height: 14px; margin: -7px 0 0 -7px;
+  background: #d13c3c; border: 2px solid #fff; border-radius: 50%;
+  box-shadow: 0 1px 4px rgba(0,0,0,.4); cursor: pointer; z-index: 2;
+}
+.map-marker:hover { transform: scale(1.2); }
+/* 悬停提示 */
+.map-marker::after {
+  content: attr(data-name);
+  position: absolute; left: 50%; bottom: calc(100% + 6px); transform: translateX(-50%);
+  background: rgba(30,30,30,.92); color: #fff; font-size: 12px; padding: 3px 9px;
+  border-radius: 6px; white-space: nowrap; opacity: 0; pointer-events: none;
+  transition: opacity .15s; z-index: 3;
+}
+.map-marker:hover::after { opacity: 1; }
+.map-hint { font-size: 12.5px; color: var(--muted); margin-bottom: 6px; }
+.marker-list { display: flex; flex-direction: column; gap: 6px; }
+.marker-item {
+  display: flex; align-items: center; gap: 10px; background: var(--card);
+  border: 1px solid var(--border); border-radius: 8px; padding: 8px 14px;
+}
+.marker-item .dot { width: 10px; height: 10px; border-radius: 50%; background: #d13c3c; flex-shrink: 0; }
+.m-name { background: none; border: none; color: var(--green); font-size: 14px; text-align: left; }
+.m-name:hover { text-decoration: underline; }
+.m-remove {
+  margin-left: auto; background: none; border: none; color: #c9c9c4; font-size: 16px; padding: 0 4px;
+}
+.m-remove:hover { color: var(--danger); }
+
+/* 更新日志列表 */
+.log-list { display: flex; flex-direction: column; gap: 6px; }
+.log-item {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 9px 14px;
+}
+.log-time { color: var(--muted); font-size: 12px; white-space: nowrap; }
+.log-text { font-size: 13.5px; }
+
+/* ---------- 弹窗 ---------- */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(20,24,20,.45);
+  display: flex; align-items: flex-start; justify-content: center;
+  z-index: 200; padding: 30px 12px; overflow-y: auto;
+}
+.modal {
+  background: var(--card); border-radius: 12px; width: 100%; max-width: 660px;
+  box-shadow: 0 16px 48px rgba(0,0,0,.28); padding: 20px 24px;
+  max-height: 88vh; overflow-y: auto;
+}
+.modal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.modal-head h2 { font-size: 18px; color: var(--green); }
+.modal-close { background: none; border: none; font-size: 22px; color: var(--muted); line-height: 1; }
+.modal-close:hover { color: var(--danger); }
+
+/* 表单 */
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px; }
+.form-field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.form-field.full { grid-column: 1 / -1; }
+.form-field label { font-size: 12.5px; color: var(--muted); }
+.form-field input, .form-field textarea, .form-field select {
+  border: 1px solid var(--border); border-radius: 6px; padding: 7px 10px;
+  background: #fcfbf9; outline: none; width: 100%;
+}
+.form-field input:focus, .form-field textarea:focus, .form-field select:focus {
+  border-color: var(--green); background: #fff;
+}
+.form-field textarea { resize: vertical; min-height: 60px; }
+.form-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+
+/* 相关条目多选 */
+.related-picker {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 4px 14px;
+  max-height: 220px; overflow-y: auto; border: 1px solid var(--border);
+  border-radius: 8px; padding: 10px 12px; background: #fcfbf9;
+}
+.rel-item {
+  display: flex; align-items: center; gap: 6px; font-size: 13.5px; cursor: pointer;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.rel-item input { flex-shrink: 0; }
+.rel-type { color: var(--muted); font-size: 12px; flex-shrink: 0; }
+
+/* ---------- 提示气泡 ---------- */
+#toast {
+  position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%) translateY(16px);
+  background: #2c3230; color: #fff; padding: 9px 20px; border-radius: 8px;
+  font-size: 13.5px; opacity: 0; pointer-events: none; transition: .25s;
+  z-index: 300; box-shadow: 0 6px 18px rgba(0,0,0,.3);
+}
+#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ---------- 响应式（手机） ---------- */
+@media (max-width: 900px) {
+  .hamburger { display: inline-flex; }
+  .sidebar { transform: translateX(-100%); transition: transform .2s; box-shadow: none; }
+  body.sidebar-open .sidebar { transform: translateX(0); box-shadow: 0 0 40px rgba(0,0,0,.25); }
+  .main { margin-left: 0; padding: 18px 14px 60px; }
+  .topbar { flex-wrap: wrap; height: auto; min-height: 56px; padding: 8px 12px; gap: 8px; }
+  .top-search { order: 5; flex: 1 1 100%; max-width: none; }
+  .top-actions { margin-left: 0; }
+  .infobox { grid-template-columns: 1fr; }
+  .like-grid { grid-template-columns: 1fr; }
+  .form-grid { grid-template-columns: 1fr; }
+  .form-field.full { grid-column: auto; }
+  .related-picker { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- ================= 顶部固定栏 ================= -->
+<header class="topbar">
+  <button class="hamburger" id="hamburger" title="菜单">☰</button>
+  <div class="brand"><span class="logo">界</span>世界观工作台</div>
+  <div class="top-search">
+    <input type="search" id="searchInput" placeholder="搜索条目…（人物 / 世界观 / 故事 / 地图）">
+  </div>
+  <div class="top-actions">
+    <button class="btn" id="exportBtn" title="导出全部数据为 JSON 备份">⭳ 导出备份</button>
+    <button class="btn" id="importBtn" title="从 JSON 备份恢复数据">⭱ 导入备份</button>
+    <input type="file" id="importFile" accept=".json,application/json" hidden>
+    <button class="btn" id="promptBtn" title="打包人物 / 世界观 / 故事为结构化文本">✦ 复制 AI 提示词</button>
+  </div>
+</header>
+
+<!-- 移动端遮罩 -->
+<div class="backdrop" id="backdrop"></div>
+
+<div class="layout">
+  <!-- ================= 左侧边栏 ================= -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-scroll" id="sidebarContent"></div>
+    <div class="sidebar-bottom">
+      <button class="btn" data-new="character">＋ 新建人物</button>
+      <button class="btn" data-new="world">＋ 新建世界观</button>
+      <button class="btn" data-new="story">＋ 新建故事</button>
+      <button class="btn" data-new="map">＋ 新建地图</button>
+    </div>
+  </aside>
+
+  <!-- ================= 右侧主内容区 ================= -->
+  <main class="main" id="main"></main>
+</div>
+
+<!-- ================= 弹窗容器 ================= -->
+<div class="modal-overlay" id="modalOverlay" hidden></div>
+
+<!-- 提示气泡 -->
+<div id="toast"></div>
+
+<script>
+'use strict';
+
+/* ============================================================
+   常量与工具函数
+   ============================================================ */
+const STORAGE_KEY = 'worldbuilder_data_v1';
+
+// 条目类型配置
+const COLLECTIONS = {
+  character: { key: 'characters', label: '人物' },
+  world:     { key: 'worlds',     label: '世界观' },
+  story:     { key: 'stories',    label: '故事' },
+  map:       { key: 'maps',       label: '地图' },
+};
+
+// 标签配色（循环使用）
+const TAG_COLORS = [
+  ['#e8efe9', '#3d5a4a'], ['#fdf0e0', '#9a6b2f'], ['#e3edf7', '#3a5f8a'],
+  ['#f6e7ef', '#8a3a63'], ['#eef3e0', '#55702f'], ['#efe9f7', '#5f3a8a'],
+  ['#fdeaea', '#8a3a3a'], ['#e8f3f3', '#2f6a6a'],
+];
+
+// 生成唯一 ID（仅含字母数字，可安全放入 HTML 属性）
+function uid() {
+  return 'e' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+}
+
+// HTML 转义，防止注入
+function esc(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+// 时间格式化：YYYY-MM-DD HH:MM
+function fmtTime(iso) {
+  const d = new Date(iso);
+  if (isNaN(d)) return '';
+  const p = n => String(n).padStart(2, '0');
+  return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) +
+         ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
+}
+
+// 提示气泡
+let toastTimer = null;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2200);
+}
+
+/* ============================================================
+   数据层：localStorage 读写 + 种子数据
+   ============================================================ */
+// 各类条目的默认字段
+function defaultCharacter() {
+  return { id: uid(), name: '', nickname: '', race: '', gender: '', age: '',
+    birthday: '', height: '', weight: '', tags: [], personality: '', likes: '',
+    dislikes: '', appearance: '', clothing: '', abilities: '', weapons: '',
+    notes: '', habits: '', keyPoints: '', comments: '' };
+}
+function defaultWorld() {
+  return { id: uid(), title: '', category: '', desc: '', related: [] };
+}
+function defaultStory() {
+  return { id: uid(), title: '', characters: '', content: '' };
+}
+function defaultMap() {
+  return { id: uid(), name: '', imageData: '', markers: [] };
+}
+
+// 数据归一化，兼容导入的旧数据
+function normalize(d) {
+  return {
+    version: 1,
+    characters: (d.characters || []).map(e => Object.assign(defaultCharacter(), e)),
+    worlds:     (d.worlds || []).map(e => Object.assign(defaultWorld(), e)),
+    stories:    (d.stories || []).map(e => Object.assign(defaultStory(), e)),
+    maps:       (d.maps || []).map(e => Object.assign(defaultMap(), e)),
+    logs: Array.isArray(d.logs) ? d.logs : [],
+    ui: {
+      current: (d.ui && d.ui.current && typeof d.ui.current.type === 'string') ? d.ui.current : null,
+      collapsed: (d.ui && d.ui.collapsed) || {},
+    },
+  };
+}
+
+// 种子数据（5 个人物 + 5 个世界观 + 若干占位条目保证关联可用）
+function seedData() {
+  const mkChar = o => Object.assign(defaultCharacter(), o);
+  const mkWorld = o => Object.assign(defaultWorld(), o);
+
+  const characters = [
+    mkChar({
+      name: '绮丽·墨易晞', nickname: '墨/水螅/混血儿', race: '混血', gender: '女',
+      age: '19', birthday: '待定', height: '169-172cm', weight: '73-75kg',
+      tags: ['黑长直', '拖延症', '胆小', '腹黑', '鬼才'],
+      personality: '佛系、话唠、戏精、善良得近乎软弱、自私但不介意舍己为人',
+      likes: '甜食、咖啡、摆弄机械、阅读',
+      dislikes: '阴天、被人误解、小虫子',
+      appearance: '乌黑如缎的黑色直发，桃花眼，纯黑虹膜无高光，鼻梁高挺，樱色嘴唇',
+      clothing: '灰色带补丁围巾、深绿兜帽衣袍、皮质腰带、棕色长裤、栗色长靴',
+      abilities: '全系魔法、空间雷达、绝对领域、黑虹、闪现',
+      weapons: '淫影长剑',
+      notes: '被制作出来联姻，性别可改变，身上有龙形纹身',
+      habits: '自言自语、情绪波动时掐自己脖子、想到开心事会偷笑',
+      keyPoints: '不擅长力量型对抗，靠技巧和淫影取胜',
+      comments: '“是没有华生的福尔摩斯，或是没有福尔摩斯的华生。”',
+    }),
+    mkChar({
+      name: '赫斯特比·奚珥·尼尔森', nickname: '奚', race: '人族', gender: '双性别偏男性',
+      age: '17', birthday: '', height: '155-160cm', weight: '43-50kg',
+      tags: ['多病', '医者', '技师', '贫乳'],
+      personality: '自卑、厌世、医者仁心、心理依赖',
+      likes: '各种小吃、制作机械、篆刻魔纹',
+      dislikes: '运动、咸湿大叔、身体接触',
+      appearance: '白金色微卷发、异色瞳（左黄右蓝）、左眼戴黑色眼罩、口咬自制呼吸器',
+      clothing: '黑色络布斗篷、马鹿皮短靴、铜指套',
+      abilities: '医者、魔纹机械学、生物学、家务能力',
+      weapons: '风石枪、细刃、灵魂震荡器',
+      notes: '双性人，有女性第二性征，先天性哮喘，右腿残疾',
+      habits: '不愿与人接触，独自游历',
+      keyPoints: '困于自身的“奚”',
+      comments: '无',
+    }),
+    mkChar({
+      name: '康特雷·艾弗斯', nickname: '无', race: '人族', gender: '男',
+      age: '未知', birthday: '', height: '182cm', weight: '63kg',
+      tags: ['外冷内热', '神子', '双重人格'],
+      personality: '冷淡、双人格、温柔',
+      likes: '清茶、魔法阵、神学、下棋、白色事物',
+      dislikes: '恶意的虚伪、味道太重的食物',
+      appearance: '纯黑色长直发、丹凤眼、纯黑瞳孔',
+      clothing: '纯白色法衣、亮银色丝边、银色教会标记、黑色靴子',
+      abilities: '精通全系法术、魔纹学、体术、掌控者',
+      weapons: '艾弗斯',
+      notes: '获得神的恩宠，代价是分给神一部分人格',
+      habits: '无',
+      keyPoints: '云初大祭司',
+      comments: '无',
+    }),
+    mkChar({
+      name: '梅忒黛·赫尔墨斯', nickname: '嘿/血棘', race: '血族一级血裔', gender: '女',
+      age: '96', birthday: '', height: '165-175cm', weight: '',
+      tags: ['病娇', '冰冷', '理性'],
+      personality: '冷漠、敏感、理性、病娇',
+      likes: '魔纹学、甜点、红茶、制作木偶',
+      dislikes: '做作者、花里胡哨不实际的东西、燥热的夏天',
+      appearance: '紫红色长直发、暗红色眼眸、小麦色皮肤、身形高挑纤细',
+      clothing: '宫廷基准、朴素',
+      abilities: '魔纹学、生物学、傀儡学、血液法',
+      weapons: '待定',
+      notes: '曾有一位人类幼女夭折，萌生将心爱之人制作成傀儡的想法',
+      habits: '前半夜研究，后半夜独自跳舞',
+      keyPoints: '对墨有执念',
+      comments: '无',
+    }),
+    mkChar({
+      name: '烁爪·莉珈', nickname: '烁爪/雷链之手', race: '云爪氏族', gender: '女',
+      age: '15-16', birthday: '', height: '165-167cm', weight: '',
+      tags: ['锻造', '兽化', '外交特使'],
+      personality: '未完全确定',
+      likes: '待定',
+      dislikes: '待定',
+      appearance: '短硬银灰色背毛+奶油色腹毛，左耳尖缺一小块，金瞳竖瞳，鼻梁三道浅爪痕',
+      clothing: '雨季装束、旱季装束、外交特使装',
+      abilities: '兽化、锻造、基本兽类体术',
+      weapons: '待定',
+      notes: '为掩盖爪鞘锈绿色偷偷涂成粉虹渐变，剜心取血救奚，左胸留下永久兽纹裂痕',
+      habits: '待定',
+      keyPoints: '与奚互相送东西',
+      comments: '无',
+    }),
+    // 占位条目：终时之城的关联「时矫」
+    mkChar({
+      name: '时矫', nickname: '', race: '时蜥', gender: '待定',
+      age: '待定', birthday: '', height: '', weight: '',
+      tags: [], personality: '待补充', likes: '', dislikes: '',
+      appearance: '', clothing: '', abilities: '', weapons: '',
+      notes: '（占位条目：终时之城的关联，可自行补充）',
+      habits: '', keyPoints: '', comments: '',
+    }),
+  ];
+
+  const worlds = [
+    mkWorld({
+      title: '虚海', category: '地理',
+      desc: '由超高浓度基本魔法元素构成的浓雾，是神制造物质世界遗留的污染区。对大部分生物有害，但其中诞生了奇特的生态。虚海中大部分生物会因长久置于其中而被置换成为无序的基本魔法元素，灵魂则会由于没有附着点而消散迷失。',
+      related: [],
+    }),
+    mkWorld({
+      title: '斯盖尔德（黑锅）', category: '地区/国家',
+      desc: '巫文化的传承。为首的山鬼算是大祭司，余下的是长老会——由几巫为主持的神殿组织。同时具有朝廷的基本体制。几乎没有人有魔法天赋。以信仰乌棱的黑暗神殿为主。',
+      related: [],
+    }),
+    mkWorld({
+      title: '魔法体系', category: '规则',
+      desc: '用魔法改变现实。通常使用休谟指数来规范魔法评级，休谟指数越高，现实越不容易被改变，所需要的魔法等级越高。分为精神力驱动、改变无生命物质形态、改变有生命物质形态、改变思想等。',
+      related: [],
+    }),
+    mkWorld({
+      title: '魅魔', category: '种族',
+      desc: '无性别，实际可能为广义四维生物。有山羊角、桃心尾巴，靠吸取精气为生。外表在不同观察者眼中不同，取决于观察者和魅魔的关系、心情、性癖。拥有魅惑术，能编制幻境。长期工作可能导致精神混乱。得到真正爱情后会长出石头心脏，形象逐渐固定。',
+      related: [],
+    }),
+    mkWorld({
+      title: '终时之城', category: '地区',
+      desc: '时蜥居住地，独立于索斯特拉的一片时空，其中有一颗世界榕演算器。建筑形貌几乎全部为难以理解的高维建筑投影。',
+      related: [],
+    }),
+    // 占位条目：保证「相关条目」链接可用
+    mkWorld({ title: '魔力假说', category: '规则', desc: '（占位条目：魔法体系的关联，可自行补充）', related: [] }),
+    mkWorld({ title: '灵魂体系', category: '规则', desc: '（占位条目：魔法体系的关联，可自行补充）', related: [] }),
+    mkWorld({ title: '魔族', category: '种族', desc: '（占位条目：魅魔的关联，可自行补充）', related: [] }),
+  ];
+
+  // 关联连线：按标题找到占位条目
+  const byTitle = (list, t) => list.find(e => e.name === t || e.title === t);
+  byTitle(worlds, '魔法体系').related = [byTitle(worlds, '魔力假说').id, byTitle(worlds, '灵魂体系').id];
+  byTitle(worlds, '魅魔').related = [byTitle(worlds, '魔族').id];
+  byTitle(worlds, '终时之城').related = [byTitle(characters, '时矫').id];
+
+  return normalize({
+    characters, worlds, stories: [], maps: [],
+    logs: [{ id: uid(), time: new Date().toISOString(), action: 'sys', type: '系统', name: '已加载示例数据' }],
+    ui: { current: null, collapsed: {} },
+  });
+}
+
+// 读取数据（首次使用或损坏时返回种子数据）
+function loadData() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const d = JSON.parse(raw);
+      if (d && Array.isArray(d.characters) && Array.isArray(d.worlds)) return normalize(d);
+    }
+  } catch (e) { /* 数据损坏则重建 */ }
+  return seedData();
+}
+
+let data = loadData();
+let current = data.ui.current;   // { type, id } | null
+let pendingMarker = null;        // 待放置的地图标记 { mapId, x, y }
+
+function saveData() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  } catch (e) {
+    toast('保存失败：浏览器存储空间不足（可尝试压缩或更换更小的地图图片）');
+  }
+}
+
+/* ============================================================
+   查询辅助
+   ============================================================ */
+function collectionOf(type) { return data[COLLECTIONS[type].key]; }
+function findEntry(type, id) {
+  return collectionOf(type).find(e => e.id === id);
+}
+// 跨类型查找（用于相关条目 / 地图标记）
+function resolveEntry(id) {
+  for (const t of Object.keys(COLLECTIONS)) {
+    const e = collectionOf(t).find(x => x.id === id);
+    if (e) return { type: t, entry: e };
+  }
+  return null;
+}
+function displayName(entry) { return entry.name || entry.title || '（未命名）'; }
+
+// 打开条目
+function openEntry(type, id) {
+  current = { type, id };
+  data.ui.current = current;
+  saveData();
+  render();
+  // 移动端打开条目后收起侧边栏
+  if (window.innerWidth <= 900) document.body.classList.remove('sidebar-open');
+}
+
+/* ============================================================
+   更新日志
+   ============================================================ */
+function logAction(action, type, name) {
+  data.logs.push({ id: uid(), time: new Date().toISOString(), action, type, name });
+  if (data.logs.length > 500) data.logs = data.logs.slice(-500); // 最多保留 500 条
+}
+
+function actionBadge(action) {
+  const map = { add: ['新增', 'add'], edit: ['修改', 'edit'], del: ['删除', 'del'], sys: ['系统', 'sys'] };
+  const [txt, cls] = map[action] || [action, 'sys'];
+  return '<span class="log-badge ' + cls + '">' + txt + '</span>';
+}
+
+/* ============================================================
+   渲染：侧边栏
+   ============================================================ */
+function renderSidebar() {
+  const kw = document.getElementById('searchInput').value.trim().toLowerCase();
+  const el = document.getElementById('sidebarContent');
+  let html = '';
+
+  // 条目在搜索词下是否可见
+  const match = (type, e) => {
+    if (!kw) return true;
+    const name = e.name || e.title;
+    let sub = '';
+    if (type === 'character') sub = e.nickname + ' ' + e.race;
+    else if (type === 'world') sub = e.category;
+    else if (type === 'story') sub = e.characters;
+    return (name || '').toLowerCase().includes(kw) || sub.toLowerCase().includes(kw);
+  };
+
+  // 四个常规分组
+  ['character', 'world', 'story', 'map'].forEach(type => {
+    const cfg = COLLECTIONS[type];
+    const list = collectionOf(type);
+    const items = list.filter(e => match(type, e));
+    // 搜索时强制展开所有分组
+    const collapsed = !kw && data.ui.collapsed[type];
+    html += '<div class="group' + (collapsed ? ' collapsed' : '') + '" data-group="' + type + '">' +
+      '<div class="group-head"><span><span class="arrow">▾</span> ' + cfg.label +
+      ' <span class="group-count">' + items.length + (kw ? '/' + list.length : '') + '</span></span></div>' +
+      '<div class="group-body">' +
+      (items.length
+        ? items.map(e => itemHTML(type, e)).join('')
+        : '<div class="empty-hint">' + (kw ? '无匹配条目' : '暂无条目') + '</div>') +
+      '</div></div>';
+  });
+
+  // 更新日志分组
+  const logs = data.logs.slice(-20).reverse();
+  const logCollapsed = !kw && data.ui.collapsed.logs;
+  html += '<div class="group' + (logCollapsed ? ' collapsed' : '') + '" data-group="logs">' +
+    '<div class="group-head"><span><span class="arrow">▾</span> 更新日志' +
+    ' <span class="group-count">' + data.logs.length + '</span></span></div>' +
+    '<div class="group-body">' +
+    (logs.length
+      ? logs.map(l => '<div class="item" data-log="1">' +
+          '<div class="name">' + actionBadge(l.action) + esc(l.type) + ' · ' + esc(l.name) + '</div>' +
+          '<div class="sub">' + fmtTime(l.time) + '</div></div>').join('')
+      : '<div class="empty-hint">暂无记录</div>') +
+    '</div></div>';
+
+  el.innerHTML = html;
+}
+
+// 侧边栏单个条目
+function itemHTML(type, e) {
+  const name = e.name || e.title;
+  const active = current && current.type === type && current.id === e.id;
+  let sub = '';
+  if (type === 'character') {
+    sub = (e.nickname && e.nickname !== '无') ? e.nickname : (e.race || '');
+  } else if (type === 'world') sub = e.category;
+  else if (type === 'story') sub = e.characters;
+  else if (type === 'map') sub = e.markers.length ? e.markers.length + ' 个标记' : '';
+  return '<div class="item' + (active ? ' active' : '') + '" data-type="' + type + '" data-id="' + e.id + '">' +
+    '<div class="name">' + esc(name) + '</div>' +
+    (sub ? '<div class="sub">' + esc(sub) + '</div>' : '') +
+    '</div>';
+}
+
+/* ============================================================
+   渲染：主内容区
+   ============================================================ */
+function renderMain() {
+  const main = document.getElementById('main');
+
+  // 仪表盘
+  if (!current) { main.innerHTML = viewDashboard(); return; }
+
+  // 更新日志页
+  if (current.type === 'logs') { main.innerHTML = viewLogs(); return; }
+
+  // 条目详情
+  const entry = findEntry(current.type, current.id);
+  if (!entry) {
+    main.innerHTML = '<div class="page"><h1 class="page-title">条目不存在</h1>' +
+      '<p class="page-sub">该条目可能已被删除。</p></div>';
+    return;
+  }
+  if (current.type === 'character') main.innerHTML = viewCharacter(entry);
+  else if (current.type === 'world') main.innerHTML = viewWorld(entry);
+  else if (current.type === 'story') main.innerHTML = viewStory(entry);
+  else if (current.type === 'map') { main.innerHTML = viewMap(entry); bindMap(entry); }
+}
+
+// 通用小节：内容为空则跳过
+function section(title, body, cls) {
+  if (!body || !String(body).trim()) return '';
+  return '<div class="sec"><h2>' + title + '</h2>' +
+    '<div class="sec-body ' + (cls || '') + '">' + esc(body) + '</div></div>';
+}
+
+// 仪表盘
+function viewDashboard() {
+  const stats = Object.keys(COLLECTIONS).map(t => {
+    const cfg = COLLECTIONS[t];
+    return '<div class="stat-card"><div class="stat-num">' + collectionOf(t).length +
+      '</div><div class="stat-label">' + cfg.label + '</div></div>';
+  }).join('');
+  const recent = data.logs.slice(-6).reverse().map(l =>
+    '<div class="log-item"><span class="log-time">' + fmtTime(l.time) + '</span>' +
+    actionBadge(l.action) + '<span class="log-text">' + esc(l.type) + ' · ' + esc(l.name) + '</span></div>'
+  ).join('');
+  return '<div class="page">' +
+    '<h1 class="page-title">欢迎回到世界观工作台</h1>' +
+    '<p class="page-sub">左侧选择条目查看详情，或在侧边栏底部新建条目。所有数据仅保存在本机浏览器中，建议定期导出备份。</p>' +
+    '<div class="stats">' + stats + '</div>' +
+    '<div class="sec"><h2>最近更新</h2><div class="log-list">' +
+    (recent || '<div class="muted">暂无更新记录</div>') + '</div></div>' +
+    '</div>';
+}
+
+// 人物详情
+function viewCharacter(c) {
+  // 副标题：昵称 / 身份
+  const parts = [];
+  if (c.nickname && c.nickname !== '无') parts.push('昵称：' + c.nickname);
+  if (c.race) parts.push('身份：' + c.race);
+  const sub = parts.join(' · ');
+
+  // 信息框：两列
+  const infoRows = [['种族', c.race], ['性别', c.gender], ['年龄', c.age],
+    ['生日', c.birthday], ['身高', c.height], ['体重', c.weight]]
+    .filter(r => r[1] && String(r[1]).trim())
+    .map(r => '<div class="info-row"><span class="info-label">' + r[0] +
+      '</span><span class="info-value">' + esc(r[1]) + '</span></div>').join('');
+
+  // 彩色标签
+  const tags = (c.tags || []).map((t, i) => {
+    const col = TAG_COLORS[i % TAG_COLORS.length];
+    return '<span class="tag" style="background:' + col[0] + ';color:' + col[1] + '">' + esc(t) + '</span>';
+  }).join('');
+
+  // 好恶两栏
+  const likes = (c.likes && String(c.likes).trim())
+    ? '<div class="like-col"><div class="like-label">喜欢</div><div class="sec-body">' + esc(c.likes) + '</div></div>' : '';
+  const dislikes = (c.dislikes && String(c.dislikes).trim())
+    ? '<div class="like-col"><div class="like-label">厌恶</div><div class="sec-body">' + esc(c.dislikes) + '</div></div>' : '';
+  const likeSec = (likes || dislikes)
+    ? '<div class="sec"><h2>好恶</h2><div class="like-grid">' + likes + dislikes + '</div></div>' : '';
+
+  return '<div class="page">' +
+    '<h1 class="page-title">' + esc(c.name) + '</h1>' +
+    (sub ? '<p class="page-sub">' + esc(sub) + '</p>' : '') +
+    '<div class="page-actions">' +
+      '<button class="btn" onclick="openForm(\'character\',\'' + c.id + '\')">编辑</button>' +
+      '<button class="btn btn-danger" onclick="deleteEntry(\'character\',\'' + c.id + '\')">删除</button>' +
+    '</div>' +
+    (infoRows ? '<div class="infobox">' + infoRows + '</div>' : '') +
+    (tags ? '<div class="tag-row">' + tags + '</div>' : '') +
+    section('性格特质', c.personality) +
+    likeSec +
+    section('外在特质', c.appearance) +
+    section('衣着饰品', c.clothing) +
+    section('个人能力简述', c.abilities) +
+    section('武器配备', c.weapons) +
+    section('详记', c.notes) +
+    section('小习惯', c.habits) +
+    section('要点', c.keyPoints) +
+    section('段评', c.comments, 'comments') +
+    '</div>';
+}
+
+// 世界观详情
+function viewWorld(w) {
+  const rel = (w.related || []).map(id => {
+    const r = resolveEntry(id);
+    if (!r) return '<span class="related-missing">' + esc(id) + '（条目已删除）</span>';
+    return '<button class="related-link" onclick="openEntry(\'' + r.type + '\',\'' +
+      r.entry.id + '\')">[' + COLLECTIONS[r.type].label + '] ' + esc(displayName(r.entry)) + '</button>';
+  }).join('');
+  return '<div class="page">' +
+    '<h1 class="page-title">' + esc(w.title) + '</h1>' +
+    (w.category ? '<p class="page-sub">' + esc(w.category) + '</p>' : '') +
+    '<div class="page-actions">' +
+      '<button class="btn" onclick="openForm(\'world\',\'' + w.id + '\')">编辑</button>' +
+      '<button class="btn btn-danger" onclick="deleteEntry(\'world\',\'' + w.id + '\')">删除</button>' +
+    '</div>' +
+    (w.desc ? '<div class="sec"><h2>描述</h2><div class="sec-body">' + esc(w.desc) + '</div></div>' : '') +
+    (rel ? '<div class="sec"><h2>相关条目</h2><div class="related-list">' + rel + '</div></div>' : '') +
+    '</div>';
+}
+
+// 故事详情
+function viewStory(s) {
+  return '<div class="page">' +
+    '<h1 class="page-title">' + esc(s.title) + '</h1>' +
+    (s.characters ? '<p class="page-sub">关联人物：' + esc(s.characters) + '</p>' : '') +
+    '<div class="page-actions">' +
+      '<button class="btn" onclick="openForm(\'story\',\'' + s.id + '\')">编辑</button>' +
+      '<button class="btn btn-danger" onclick="deleteEntry(\'story\',\'' + s.id + '\')">删除</button>' +
+    '</div>' +
+    (s.content ? '<div class="sec"><h2>内容</h2><div class="sec-body">' + esc(s.content) + '</div></div>' : '') +
+    '</div>';
+}
+
+// 地图详情
+function viewMap(m) {
+  const markers = (m.markers || []).map(mk => {
+    const r = resolveEntry(mk.entryId);
+    const nm = r ? displayName(r.entry) : '（已删除）';
+    return '<div class="map-marker" style="left:' + mk.x + '%;top:' + mk.y + '%"' +
+      ' data-name="' + esc(nm) + '" data-etype="' + esc(mk.entryType) +
+      '" data-eid="' + esc(mk.entryId) + '"></div>';
+  }).join('');
+
+  const list = (m.markers || []).map((mk, i) => {
+    const r = resolveEntry(mk.entryId);
+    const nm = r ? displayName(r.entry) : '（已删除）';
+    const label = COLLECTIONS[mk.entryType] ? COLLECTIONS[mk.entryType].label : mk.entryType;
+    return '<div class="marker-item"><span class="dot"></span>' +
+      '<button class="m-name" onclick="openEntry(\'' + esc(mk.entryType) + '\',\'' + esc(mk.entryId) + '\')">[' +
+      label + '] ' + esc(nm) + '</button>' +
+      '<button class="m-remove" onclick="removeMarker(\'' + m.id + '\',' + i + ')" title="删除标记">×</button></div>';
+  }).join('');
+
+  return '<div class="page">' +
+    '<h1 class="page-title">' + esc(m.name) + '</h1>' +
+    '<div class="page-actions">' +
+      '<button class="btn" onclick="openForm(\'map\',\'' + m.id + '\')">编辑</button>' +
+      '<label class="btn btn-primary">' + (m.imageData ? '更换图片' : '上传图片') +
+        '<input type="file" id="mapUpload" accept="image/*" hidden></label>' +
+      '<button class="btn btn-danger" onclick="deleteEntry(\'map\',\'' + m.id + '\')">删除</button>' +
+    '</div>' +
+    '<div class="map-wrap" id="mapWrap">' +
+      (m.imageData
+        ? '<img class="map-img" id="mapImg" src="' + m.imageData + '" alt="' + esc(m.name) + '">' + markers
+        : '<div class="map-placeholder">📜 尚未上传地图图片</div>') +
+    '</div>' +
+    (m.imageData ? '<p class="map-hint">💡 点击图片任意位置添加标记；悬停标记查看名称；点击标记跳转条目。</p>' : '') +
+    '<div class="sec"><h2>标记列表（' + (m.markers || []).length + '）</h2>' +
+      '<div class="marker-list">' + (list || '<div class="muted">暂无标记，点击图片即可添加。</div>') + '</div></div>' +
+    '</div>';
+}
+
+// 地图交互绑定（图片上传、点击加标记、点击标记跳转）
+function bindMap(m) {
+  const upload = document.getElementById('mapUpload');
+  if (upload) {
+    upload.addEventListener('change', async function () {
+      const file = this.files[0];
+      if (!file) return;
+      toast('正在压缩图片…');
+      m.imageData = await compressImage(file);
+      logAction('edit', '地图', m.name + ' · 更换图片');
+      saveData();
+      render();
+    });
+  }
+  const wrap = document.getElementById('mapWrap');
+  const img = document.getElementById('mapImg');
+  if (img && wrap) {
+    // 点击已有标记：跳转到关联条目
+    wrap.addEventListener('click', function (e) {
+      const mk = e.target.closest('.map-marker');
+      if (mk) openEntry(mk.dataset.etype, mk.dataset.eid);
+    });
+    // 点击图片空白处：记录坐标并弹出添加标记窗口
+    img.addEventListener('click', function (e) {
+      const rect = img.getBoundingClientRect();
+      const x = ((e.clientX - rect.left) / rect.width) * 100;
+      const y = ((e.clientY - rect.top) / rect.height) * 100;
+      pendingMarker = { mapId: m.id, x: Math.round(x * 10) / 10, y: Math.round(y * 10) / 10 };
+      openMarkerModal();
+    });
+  }
+}
+
+function removeMarker(mapId, index) {
+  const m = findEntry('map', mapId);
+  if (!m || !m.markers[index]) return;
+  m.markers.splice(index, 1);
+  logAction('edit', '地图', m.name + ' · 删除标记');
+  saveData();
+  render();
+}
+
+// 更新日志页
+function viewLogs() {
+  const items = data.logs.slice().reverse().map(l =>
+    '<div class="log-item"><span class="log-time">' + fmtTime(l.time) + '</span>' +
+    actionBadge(l.action) + '<span class="log-text">' + esc(l.type) + ' · ' + esc(l.name) + '</span></div>'
+  ).join('');
+  return '<div class="page">' +
+    '<h1 class="page-title">更新日志</h1>' +
+    '<p class="page-sub">自动记录条目的新增、修改与删除。</p>' +
+    '<div class="sec"><div class="log-list">' + (items || '<div class="muted">暂无记录</div>') + '</div></div>' +
+    '</div>';
+}
+
+/* ============================================================
+   图片压缩：最长边不超过 1600px
+   ============================================================ */
+function compressImage(file, maxSize = 1600) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        let w = img.width, h = img.height;
+        if (Math.max(w, h) > maxSize) {
+          const scale = maxSize / Math.max(w, h);
+          w = Math.round(w * scale);
+          h = Math.round(h * scale);
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#ffffff';           // 透明背景铺白
+        ctx.fillRect(0, 0, w, h);
+        ctx.drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', 0.85));
+      };
+      img.onerror = () => { toast('图片读取失败'); reject(new Error('img')); };
+      img.src = reader.result;
+    };
+    reader.onerror = () => { toast('文件读取失败'); reject(new Error('file')); };
+    reader.readAsDataURL(file);
+  });
+}
+
+/* ============================================================
+   弹窗系统
+   ============================================================ */
+function openModal(html) {
+  const overlay = document.getElementById('modalOverlay');
+  overlay.innerHTML = '<div class="modal">' + html + '</div>';
+  overlay.hidden = false;
+}
+function closeModal() {
+  document.getElementById('modalOverlay').hidden = true;
+  pendingMarker = null;
+}
+
+/* ============================================================
+   新建 / 编辑表单
+   ============================================================ */
+function openForm(type, id) {
+  const entry = id ? findEntry(type, id) : null;
+  const cfg = COLLECTIONS[type];
+  let fields = '';
+
+  if (type === 'character') {
+    const c = entry || {};
+    const input = (key, label, val, required) =>
+      '<div class="form-field"><label>' + label + (required ? ' *' : '') + '</label>' +
+      '<input id="f_' + key + '" value="' + esc(val || '') + '"' + (required ? ' required' : '') + '></div>';
+    const area = (key, label, val, rows) =>
+      '<div class="form-field full"><label>' + label + '</label>' +
+      '<textarea id="f_' + key + '" rows="' + (rows || 2) + '">' + esc(val || '') + '</textarea></div>';
+    fields =
+      input('name', '姓名', c.name, true) + input('nickname', '昵称', c.nickname) +
+      input('race', '种族', c.race) + input('gender', '性别', c.gender) +
+      input('age', '年龄', c.age) + input('birthday', '生日', c.birthday) +
+      input('height', '身高', c.height) + input('weight', '体重', c.weight) +
+      '<div class="form-field full"><label>标签（用逗号分隔）</label>' +
+      '<input id="f_tags" value="' + esc((c.tags || []).join('，')) + '"></div>' +
+      area('personality', '性格特质', c.personality) + area('likes', '喜欢', c.likes) +
+      area('dislikes', '厌恶', c.dislikes) + area('appearance', '外在特质', c.appearance) +
+      area('clothing', '衣着饰品', c.clothing) + area('abilities', '个人能力简述', c.abilities) +
+      area('weapons', '武器配备', c.weapons) + area('notes', '详记', c.notes) +
+      area('habits', '小习惯', c.habits) + area('keyPoints', '要点', c.keyPoints) +
+      area('comments', '段评', c.comments);
+  } else if (type === 'world') {
+    const w = entry || {};
+    // 相关条目多选（排除自身）
+    let picker = '';
+    Object.keys(COLLECTIONS).forEach(t => {
+      const opts = collectionOf(t).filter(e => e.id !== id)
+        .map(e => '<label class="rel-item"><input type="checkbox" name="f_related" value="' + e.id + '"' +
+          ((w.related || []).includes(e.id) ? ' checked' : '') + '>' +
+          '<span class="rel-type">[' + COLLECTIONS[t].label + ']</span> ' + esc(displayName(e)) + '</label>').join('');
+      if (opts) picker += opts;
+    });
+    fields =
+      '<div class="form-field"><label>条目名 *</label><input id="f_title" value="' + esc(w.title || '') + '" required></div>' +
+      '<div class="form-field"><label>分类</label><input id="f_category" value="' + esc(w.category || '') + '"></div>' +
+      '<div class="form-field full"><label>描述</label><textarea id="f_desc" rows="6">' + esc(w.desc || '') + '</textarea></div>' +
+      '<div class="form-field full"><label>相关条目（勾选后可在详情页点击跳转）</label>' +
+      '<div class="related-picker">' + (picker || '<span class="muted">暂无其他条目</span>') + '</div></div>';
+  } else if (type === 'story') {
+    const s = entry || {};
+    fields =
+      '<div class="form-field"><label>标题 *</label><input id="f_title" value="' + esc(s.title || '') + '" required></div>' +
+      '<div class="form-field"><label>关联人物</label><input id="f_characters" value="' + esc(s.characters || '') + '"></div>' +
+      '<div class="form-field full"><label>内容</label><textarea id="f_content" rows="8">' + esc(s.content || '') + '</textarea></div>';
+  } else { // map
+    const m = entry || {};
+    fields =
+      '<div class="form-field"><label>地图名 *</label><input id="f_name" value="' + esc(m.name || '') + '" required></div>' +
+      '<div class="form-field"><label>图片</label><input type="file" id="f_image" accept="image/*"></div>' +
+      '<div class="form-field full"><span class="muted">' +
+      (m.imageData ? '已有图片。选择新图片将替换，并自动压缩到 1600px 以内。' : '可选，稍后也可在地图页上传。图片自动压缩到 1600px 以内。') +
+      '</span></div>';
+  }
+
+  openModal(
+    '<div class="modal-head"><h2>' + (entry ? '编辑' : '新建') + cfg.label +
+    '</h2><button class="modal-close" onclick="closeModal()">×</button></div>' +
+    '<form id="entryForm" class="form-grid">' + fields +
+    '<div class="form-actions full"><button type="button" class="btn" onclick="closeModal()">取消</button>' +
+    '<button type="submit" class="btn btn-primary">保存</button></div></form>'
+  );
+
+  document.getElementById('entryForm').addEventListener('submit', function (ev) {
+    ev.preventDefault();
+    saveForm(type, id);
+  });
+  // 聚焦第一个输入框
+  const first = document.querySelector('#entryForm input, #entryForm textarea');
+  if (first) first.focus();
+}
+
+// 表单提交保存
+async function saveForm(type, id) {
+  const v = key => {
+    const el = document.getElementById('f_' + key);
+    return el ? el.value.trim() : '';
+  };
+  const isNew = !id;
+  let entry, name;
+
+  if (type === 'character') {
+    name = v('name');
+    if (!name) { toast('请填写姓名'); return; }
+    const obj = {
+      name, nickname: v('nickname'), race: v('race'), gender: v('gender'),
+      age: v('age'), birthday: v('birthday'), height: v('height'), weight: v('weight'),
+      tags: v('tags').split(/[,，]/).map(s => s.trim()).filter(Boolean),
+      personality: v('personality'), likes: v('likes'), dislikes: v('dislikes'),
+      appearance: v('appearance'), clothing: v('clothing'), abilities: v('abilities'),
+      weapons: v('weapons'), notes: v('notes'), habits: v('habits'),
+      keyPoints: v('keyPoints'), comments: v('comments'),
+    };
+    if (isNew) { obj.id = uid(); data.characters.push(obj); entry = obj; }
+    else { entry = findEntry('character', id); Object.assign(entry, obj); }
+  } else if (type === 'world') {
+    name = v('title');
+    if (!name) { toast('请填写条目名'); return; }
+    const related = Array.from(document.querySelectorAll('#entryForm input[name=f_related]:checked'))
+      .map(el => el.value);
+    const obj = { title: name, category: v('category'), desc: v('desc'), related };
+    if (isNew) { obj.id = uid(); data.worlds.push(obj); entry = obj; }
+    else { entry = findEntry('world', id); Object.assign(entry, obj); }
+  } else if (type === 'story') {
+    name = v('title');
+    if (!name) { toast('请填写标题'); return; }
+    const obj = { title: name, characters: v('characters'), content: v('content') };
+    if (isNew) { obj.id = uid(); data.stories.push(obj); entry = obj; }
+    else { entry = findEntry('story', id); Object.assign(entry, obj); }
+  } else { // map
+    name = v('name');
+    if (!name) { toast('请填写地图名'); return; }
+    const fileEl = document.getElementById('f_image');
+    let imageData = isNew ? '' : findEntry('map', id).imageData;
+    if (fileEl && fileEl.files[0]) {
+      imageData = await compressImage(fileEl.files[0]);
+    }
+    const obj = { name, imageData };
+    if (isNew) { obj.id = uid(); obj.markers = []; data.maps.push(obj); entry = obj; }
+    else { entry = findEntry('map', id); entry.name = name; entry.imageData = imageData; }
+  }
+
+  closeModal();
+  logAction(isNew ? 'add' : 'edit', COLLECTIONS[type].label, name);
+  saveData();
+  openEntry(type, entry.id);
+}
+
+// 删除条目（并清理关联引用）
+function deleteEntry(type, id) {
+  const entry = findEntry(type, id);
+  if (!entry) return;
+  const name = displayName(entry);
+  if (!confirm('确定删除「' + name + '」吗？此操作不可撤销。')) return;
+
+  const list = collectionOf(type);
+  const idx = list.findIndex(e => e.id === id);
+  if (idx > -1) list.splice(idx, 1);
+
+  // 清理世界观 related 与地图 markers 中的引用
+  data.worlds.forEach(w => { w.related = w.related.filter(r => r !== id); });
+  data.maps.forEach(m => { m.markers = m.markers.filter(mk => mk.entryId !== id); });
+
+  if (current && current.type === type && current.id === id) {
+    current = null;
+    data.ui.current = null;
+  }
+  logAction('del', COLLECTIONS[type].label, name);
+  saveData();
+  render();
+}
+
+/* ============================================================
+   地图标记弹窗
+   ============================================================ */
+function openMarkerModal() {
+  const typeOpts = Object.keys(COLLECTIONS)
+    .map(t => '<option value="' + t + '">' + COLLECTIONS[t].label + '</option>').join('');
+  openModal(
+    '<div class="modal-head"><h2>添加标记</h2>' +
+    '<button class="modal-close" onclick="closeModal()">×</button></div>' +
+    '<div class="form-grid">' +
+    '<div class="form-field"><label>条目类型</label><select id="mkType">' + typeOpts + '</select></div>' +
+    '<div class="form-field"><label>关联条目</label><select id="mkEntry"></select></div>' +
+    '<div class="form-actions full"><button type="button" class="btn" onclick="closeModal()">取消</button>' +
+    '<button type="button" class="btn btn-primary" id="mkSave">保存标记</button></div></div>'
+  );
+
+  const typeSel = document.getElementById('mkType');
+  const entrySel = document.getElementById('mkEntry');
+  const fillEntries = () => {
+    const list = collectionOf(typeSel.value);
+    entrySel.innerHTML = list.length
+      ? list.map(e => '<option value="' + e.id + '">' + esc(displayName(e)) + '</option>').join('')
+      : '<option value="">（该分组暂无条目）</option>';
+  };
+  typeSel.addEventListener('change', fillEntries);
+  fillEntries();
+
+  document.getElementById('mkSave').addEventListener('click', function () {
+    const eid = entrySel.value;
+    if (!eid) { toast('请选择要关联的条目'); return; }
+    const m = findEntry('map', pendingMarker.mapId);
+    if (!m) { closeModal(); return; }
+    m.markers.push({ x: pendingMarker.x, y: pendingMarker.y, entryType: typeSel.value, entryId: eid });
+    closeModal();
+    logAction('edit', '地图', m.name + ' · 添加标记');
+    saveData();
+    render();
+  });
+}
+
+/* ============================================================
+   导出 / 导入 JSON 备份
+   ============================================================ */
+function fileStamp() {
+  const d = new Date();
+  const p = n => String(n).padStart(2, '0');
+  return d.getFullYear() + p(d.getMonth() + 1) + p(d.getDate()) +
+    '-' + p(d.getHours()) + p(d.getMinutes()) + p(d.getSeconds());
+}
+
+function exportData() {
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'worldbuilder-backup-' + fileStamp() + '.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+  toast('备份已导出');
+}
+
+function importData(file) {
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const d = JSON.parse(reader.result);
+      if (!d || !Array.isArray(d.characters) || !Array.isArray(d.worlds) ||
+          !Array.isArray(d.stories) || !Array.isArray(d.maps)) {
+        throw new Error('bad format');
+      }
+      data = normalize(d);
+      current = data.ui.current;
+      logAction('sys', '系统', '导入备份');
+      saveData();
+      render();
+      toast('导入成功');
+    } catch (e) {
+      toast('导入失败：文件格式不正确');
+    }
+  };
+  reader.readAsText(file);
+}
+
+/* ============================================================
+   复制 AI 提示词
+   ============================================================ */
+function buildPrompt() {
+  const L = [];
+  L.push('以下是我的原创奇幻世界观设定，请在后续对话中严格基于这些设定进行创作、解答与扩展：');
+  L.push('');
+
+  if (data.characters.length) {
+    L.push('【人物】');
+    data.characters.forEach(c => {
+      L.push('### ' + c.name + (c.nickname && c.nickname !== '无' ? '（' + c.nickname + '）' : ''));
+      const rows = [
+        ['昵称', c.nickname], ['种族', c.race], ['性别', c.gender], ['年龄', c.age],
+        ['生日', c.birthday], ['身高', c.height], ['体重', c.weight],
+        ['标签', (c.tags || []).join('、')], ['性格', c.personality],
+        ['喜欢', c.likes], ['厌恶', c.dislikes], ['外在特质', c.appearance],
+        ['衣着', c.clothing], ['能力', c.abilities], ['武器', c.weapons],
+        ['详记', c.notes], ['小习惯', c.habits], ['要点', c.keyPoints], ['段评', c.comments],
+      ];
+      rows.forEach(r => {
+        if (r[1] && String(r[1]).trim()) L.push('- ' + r[0] + '：' + String(r[1]).trim());
+      });
+      L.push('');
+    });
+  }
+
+  if (data.worlds.length) {
+    L.push('【世界观】');
+    data.worlds.forEach(w => {
+      L.push('### ' + w.title + (w.category ? '（' + w.category + '）' : ''));
+      if (w.desc) L.push(w.desc);
+      if (w.related.length) {
+        const rel = w.related.map(id => {
+          const r = resolveEntry(id);
+          return r ? (COLLECTIONS[r.type].label + '·' + displayName(r.entry)) : id;
+        });
+        L.push('- 相关：' + rel.join('、'));
+      }
+      L.push('');
+    });
+  }
+
+  if (data.stories.length) {
+    L.push('【故事】');
+    data.stories.forEach(s => {
+      L.push('### ' + s.title);
+      if (s.characters) L.push('- 关联人物：' + s.characters);
+      if (s.content) L.push(s.content);
+      L.push('');
+    });
+  }
+
+  L.push('【要求】设定中未提及的细节可用合理推断补充，但请勿与上述设定冲突。');
+  return L.join('\n');
+}
+
+async function copyPrompt() {
+  const text = buildPrompt();
+  try {
+    await navigator.clipboard.writeText(text);
+    toast('AI 提示词已复制，可粘贴到 DeepSeek');
+  } catch (e) {
+    // 兼容 file:// 环境下的剪贴板访问
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    ta.remove();
+    toast('AI 提示词已复制，可粘贴到 DeepSeek');
+  }
+}
+
+/* ============================================================
+   总渲染与事件绑定
+   ============================================================ */
+function render() { renderSidebar(); renderMain(); }
+
+// 侧边栏：折叠分组 / 点击条目
+document.getElementById('sidebarContent').addEventListener('click', function (e) {
+  const head = e.target.closest('.group-head');
+  if (head) {
+    const group = head.closest('.group').dataset.group;
+    data.ui.collapsed[group] = !data.ui.collapsed[group];
+    saveData();
+    renderSidebar();
+    return;
+  }
+  const item = e.target.closest('.item');
+  if (!item) return;
+  if (item.dataset.log) { openEntry('logs', null); return; }
+  openEntry(item.dataset.type, item.dataset.id);
+});
+
+// 侧边栏底部：新建按钮
+document.querySelectorAll('.sidebar-bottom [data-new]').forEach(btn => {
+  btn.addEventListener('click', () => openForm(btn.dataset.new));
+});
+
+// 顶栏：搜索实时过滤
+document.getElementById('searchInput').addEventListener('input', renderSidebar);
+
+// 顶栏：导出 / 导入 / AI 提示词
+document.getElementById('exportBtn').addEventListener('click', exportData);
+document.getElementById('importBtn').addEventListener('click', () =>
+  document.getElementById('importFile').click());
+document.getElementById('importFile').addEventListener('change', function () {
+  if (this.files[0]) importData(this.files[0]);
+  this.value = '';
+});
+document.getElementById('promptBtn').addEventListener('click', copyPrompt);
+
+// 弹窗：点击遮罩关闭 / Esc 关闭
+document.getElementById('modalOverlay').addEventListener('click', function (e) {
+  if (e.target === this) closeModal();
+});
+document.addEventListener('keydown', function (e) {
+  if (e.key === 'Escape' && !document.getElementById('modalOverlay').hidden) closeModal();
+});
+
+// 移动端：汉堡菜单
+document.getElementById('hamburger').addEventListener('click', () =>
+  document.body.classList.toggle('sidebar-open'));
+document.getElementById('backdrop').addEventListener('click', () =>
+  document.body.classList.remove('sidebar-open'));
+
+/* ============================================================
+   初始化
+   ============================================================ */
+render();
+</script>
+</body>
+</html>
